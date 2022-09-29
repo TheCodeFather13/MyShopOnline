@@ -18,12 +18,7 @@ namespace ShopOnline.Api.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            base.OnModelCreating(modelBuilder);
-
-            modelBuilder.Entity<ProductCategory>()
-                .HasMany(x => x.Products)
-                .WithOne(y => y.Category)
-                .HasForeignKey(c => c.CategoryId);
+            base.OnModelCreating(modelBuilder);         
 
             modelBuilder.Entity<Product>().HasData(new Product
             {
@@ -318,6 +313,6 @@ namespace ShopOnline.Api.Data
                 Id = 4,
                 Name = "Shoes"
             });
-        }
+        } 
     }
 }
