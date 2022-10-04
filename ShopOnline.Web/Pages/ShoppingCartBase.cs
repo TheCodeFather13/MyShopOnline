@@ -1,4 +1,6 @@
 ﻿using Microsoft.AspNetCore.Components;
+using Microsoft.JSInterop;
+using Microsoft.JSInterop.Implementation;
 using ShopOnline.Models.Dtos;
 using ShopOnline.Web.Services.Contracts;
 
@@ -7,6 +9,9 @@ namespace ShopOnline.Web.Pages
     public class ShoppingCartBase : ComponentBase
     {
         [Inject]
+        public IJSRuntime Js { get; set; }
+
+        [Inject]
         public IShoppingCartService ShoppingCartService { get; set; }
         
         public List<CartItemDto> ShoppingCartItems { get; set; }
@@ -14,14 +19,16 @@ namespace ShopOnline.Web.Pages
         public string ErrorMessage { get; set; }
 
         protected string TotalPrice { get; set; }
-        protected int TotalQuantity { get; set; }   
+        protected int TotalQuantity { get; set; }
+
+        public JSObjectReference module;
 
         protected override async Task OnInitializedAsync()
         {
             try
             {
                 ShoppingCartItems = await ShoppingCartService.GetItems(HardCoded.UserId);
-                CalculateCartSummaryTotals();
+                CartChanged();
             }
             catch (Exception e)
             {
@@ -33,7 +40,7 @@ namespace ShopOnline.Web.Pages
         {
             var cartItemDto = await ShoppingCartService.DeleteItem(id);
             RemoveCarItem(id);
-            CalculateCartSummaryTotals();
+            CartChanged();
         }
 
         protected async Task UpdateQtyCartItem_Click(int id, int qty)
@@ -51,7 +58,8 @@ namespace ShopOnline.Web.Pages
                     var returnedUpdateItemDto = await this.ShoppingCartService.UpdateQty(updateItemDto);
 
                     UpdateItemTotalPrice(returnedUpdateItemDto);
-                    CalculateCartSummaryTotals();
+                    
+                    CartChanged();                                   
                 }
                 else
                 {
@@ -69,6 +77,17 @@ namespace ShopOnline.Web.Pages
                 throw;
             }
         }
+
+        //protected async Task UpdateQty_Input(int id)
+        //{
+        //    await MakeUpdateQtyButtonVisible(id, true);
+        //}
+                               
+        //private async Task MakeUpdateQtyButtonVisible(int id, bool visible)
+        //{
+        //    module = await Js.InvokeAsync<JSObjectReference>("import", "./js/ShoppingCartFunctions.js");
+        //    await module.InvokeVoidAsync("MakeUpdateQtyButtonVisible", id, visible);
+        //}
 
         private void UpdateItemTotalPrice(CartItemDto cartItemDto)
         {
@@ -104,6 +123,12 @@ namespace ShopOnline.Web.Pages
         {
             var cartItemDto = GetCartItem(id);
             ShoppingCartItems.Remove(cartItemDto);
+        }
+
+        private void CartChanged()
+        {
+            CalculateCartSummaryTotals();
+            ShoppingCartService.RaiseEventOnShoppingCartChanged(TotalQuantity);
         }
     }
 }
